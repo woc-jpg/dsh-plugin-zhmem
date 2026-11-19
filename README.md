@@ -222,6 +222,7 @@ curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
 | `PORT` | `8570` | 本地端口 |
 | `ZHMEM_OFFLINE` | 不设 | 设成 `1` 就完全不联网 |
 | `ZHMEM_BROWSER` | 自动找 Edge 再找 Chrome | 用哪个浏览器开窗口 |
+| `ZHMEM_WINDOW` | `1296x828` | 窗口大小，居中打开。拖过窗口之后记的是你拖的尺寸 |
 
 **插件版**接受三个配置，写进 profile 的 bundle 配置里：
 

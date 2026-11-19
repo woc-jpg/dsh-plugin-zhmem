@@ -6,7 +6,7 @@
 // normal browsing session, and killing the launcher does not leave a stray
 // server behind.
 
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +34,53 @@ const BROWSERS = [
 function findBrowser() {
   if (process.env.ZHMEM_BROWSER) return process.env.ZHMEM_BROWSER;
   return BROWSERS.find((p) => existsSync(p)) ?? null;
+}
+
+// The window opens the size a normal desktop app opens: comfortable, not
+// filling the screen. Maximizing is left to the user and behaves normally,
+// because we never pass --start-maximized and never pin the size to the work
+// area. On a fresh profile the browser takes these numbers verbatim; after that
+// the profile's own remembered geometry wins, which is what you want once
+// someone has resized it.
+const DEFAULT_WINDOW = { width: 1296, height: 828 };
+
+function screenArea() {
+  try {
+    const raw = execFileSync(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-Command',
+        'Add-Type -AssemblyName System.Windows.Forms;' +
+        '$a=[System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea;' +
+        '"$($a.X),$($a.Y),$($a.Width),$($a.Height)"'],
+      { encoding: 'utf8', timeout: 4000, windowsHide: true },
+    ).trim();
+    const [x, y, width, height] = raw.split(',').map(Number);
+    if ([x, y, width, height].every((n) => Number.isFinite(n)) && width > 400) {
+      return { x, y, width, height };
+    }
+  } catch {
+    // no PowerShell, or no WinForms: fall back to a plain centred window
+  }
+  return null;
+}
+
+function windowRect(area) {
+  const custom = process.env.ZHMEM_WINDOW;
+  let width = DEFAULT_WINDOW.width;
+  let height = DEFAULT_WINDOW.height;
+  if (custom && /^\d+x\d+$/.test(custom)) {
+    [width, height] = custom.split('x').map(Number);
+  }
+  if (!area) return { width, height, x: 60, y: 60 };
+  // Never open bigger than the work area on a small screen.
+  width = Math.min(width, area.width - 40);
+  height = Math.min(height, area.height - 40);
+  return {
+    width,
+    height,
+    x: area.x + Math.round((area.width - width) / 2),
+    y: area.y + Math.round((area.height - height) / 2),
+  };
 }
 
 async function waitForServer(deadlineMs = 30000) {
@@ -96,16 +143,21 @@ async function main() {
 
   const counts = status.counts ?? {};
   console.log(`服务就绪：知识库 ${Object.values(counts).reduce((a, b) => a + b, 0)} 条，版本 ${status.version}`);
-  console.log('打开窗口…（关掉窗口程序就退出）');
+  const rect = windowRect(screenArea());
+  console.log(`打开窗口 ${rect.width}×${rect.height}…（关掉窗口程序就退出）`);
 
-  const child = spawn(browser, [
+  const args = [
     `--user-data-dir=${PROFILE}`,
     `--app=http://127.0.0.1:${PORT}/`,
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-background-mode',
     '--disable-features=Translate,MediaRouter',
-  ], { stdio: 'ignore', windowsHide: false });
+    `--window-size=${rect.width},${rect.height}`,
+    `--window-position=${rect.x},${rect.y}`,
+  ];
+
+  const child = spawn(browser, args, { stdio: 'ignore', windowsHide: false });
 
   // Poll instead of listening for 'exit': when the user closes the last app
   // window, the browser process sometimes lingers for a moment, and sometimes
