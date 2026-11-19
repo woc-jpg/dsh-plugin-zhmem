@@ -1,0 +1,9 @@
+node_modules/
+.browser-profile/
+*.tgz
+*.db
+*.db-shm
+*.db-wal
+tmp-*
+zhmem-knowledge/
+.DS_Store

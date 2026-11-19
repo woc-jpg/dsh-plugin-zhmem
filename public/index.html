@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zhmem · 中文记忆检索</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">知</div>
+      <div>
+        <h1>zhmem</h1>
+        <p id="verline">中文优先的记忆检索</p>
+      </div>
+    </div>
+    <nav>
+      <button class="nav on" data-view="ask">检索</button>
+      <button class="nav" data-view="memory">记忆</button>
+      <button class="nav" data-view="kb">知识库</button>
+      <button class="nav" data-view="about">关于</button>
+    </nav>
+    <div class="side-foot">
+      <label class="switch"><input type="checkbox" id="offline"> 只查本地</label>
+      <div class="stat" id="sidenums">—</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- 检索 -->
+    <section class="view on" id="view-ask">
+      <div class="askbar">
+        <input id="q" type="text" placeholder="问点什么，比如「膝盖疼还能跑步吗」「敦煌怎么玩」" autocomplete="off">
+        <button id="go" class="primary">问</button>
+      </div>
+      <div class="hint">本地命中够强就直接答，不够才联网，联网结果带来源链接和图片。</div>
+      <div id="answer" class="answer empty">还没有提问。</div>
+    </section>
+
+    <!-- 记忆 -->
+    <section class="view" id="view-memory">
+      <div class="section-head">
+        <h2>个人记忆</h2>
+        <button id="mem-refresh" class="ghost">刷新</button>
+      </div>
+      <div class="card">
+        <div class="row">
+          <input id="mem-text" type="text" placeholder="要记住的一句话">
+          <input id="mem-subject" type="text" placeholder="主题词（可选，短）" class="short">
+          <input id="mem-ns" type="text" placeholder="分组" class="short" value="default">
+          <button id="mem-add" class="primary">存下</button>
+        </div>
+      </div>
+      <div id="mem-list" class="list"></div>
+    </section>
+
+    <!-- 知识库 -->
+    <section class="view" id="view-kb">
+      <div class="section-head">
+        <h2>我的知识库</h2>
+        <button id="kb-refresh" class="ghost">刷新</button>
+      </div>
+      <div class="card">
+        <p class="muted">把你自己的资料整理成 JSON 数组导进来，字段：<code>title</code>（短标题，最好 4 字以内）、<code>body</code>（正文）、<code>tags</code>（别名，越多越好召回）、<code>image_query</code>（配图关键词，可选）。</p>
+        <div class="row">
+          <input id="kb-file" type="file" accept=".json,application/json">
+          <input id="kb-ns" type="text" placeholder="存到哪个分组" class="short" value="mine">
+          <button id="kb-import" class="primary">导入</button>
+          <button id="kb-tpl" class="ghost">下载模板</button>
+        </div>
+        <div id="kb-msg" class="muted"></div>
+      </div>
+      <div id="kb-list" class="list"></div>
+    </section>
+
+    <!-- 关于 -->
+    <section class="view" id="view-about">
+      <h2>关于</h2>
+      <div class="card prose">
+        <p>zhmem 是一个中文优先的检索库。它有两层：<b>内置知识库</b>（生活 / 旅游 / 健身 84 条）和<b>个人记忆</b>（你自己存的事）。本地命中弱的时候才联网，联网结果都带来源。</p>
+        <p>这个窗口是独立运行的版本，和 DSH 插件用的是同一份检索代码，区别只在于一个走 HTTP、一个走 MCP。数据存在本机的 <code>~/.workbuddy/zhmem-memory.db</code>，两边共用同一个文件。</p>
+        <p>没有 Python 依赖，只要 Node 22 以上。</p>
+      </div>
+      <div class="card">
+        <div class="kv" id="about-kv"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

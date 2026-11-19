@@ -1,0 +1,7 @@
+# 源文件统一 LF；只有 Windows 双击的那个 bat 单独锁 CRLF。
+# 不锁 CRLF 的话 cmd 会把 LF 的 bat 当坏文件，双击一闪就没。
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary

@@ -1,0 +1,74 @@
+{
+  "name": "dsh-plugin-zhmem",
+  "version": "0.1.0",
+  "description": "Chinese-first hybrid retrieval for DSH: 84 built-in life/travel/fitness entries, personal memory recall, web and image search. Pure Node, no Python, no API key.",
+  "type": "module",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "homepage": "https://github.com/woc-jpg/dsh-plugin-zhmem#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woc-jpg/dsh-plugin-zhmem.git"
+  },
+  "bugs": {
+    "url": "https://github.com/woc-jpg/dsh-plugin-zhmem/issues"
+  },
+  "author": {
+    "name": "YG"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "bin": {
+    "zhmem-local": "launcher.js"
+  },
+  "scripts": {
+    "start": "node launcher.js",
+    "serve": "node server.js",
+    "test": "node --test test/parity.test.mjs test/server.test.mjs"
+  },
+  "files": [
+    "lib",
+    "data",
+    "public",
+    "server.js",
+    "launcher.js",
+    "启动.bat",
+    "cordis.patch.yml",
+    "README.md",
+    "FAQ.md"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "zhmem",
+    "chinese",
+    "retrieval",
+    "fts5",
+    "sqlite",
+    "memory",
+    "rag"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./mcp": "./lib/mcp.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

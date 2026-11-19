@@ -1,0 +1,10 @@
+# dsh-plugin-zhmem bundle patch.
+#
+# One insert, and the Host half is live: it registers the zhmem_* tool family.
+# There is no browser half and no Python requirement - the retrieval core runs
+# on node:sqlite (FTS5 ships with Node 22+), so the knowledge base, the personal
+# memory store, web fallback and image search all work from the plugin itself.
+- insert:
+    - id: zhmem
+      name: dsh-plugin-zhmem
+      config: {}
