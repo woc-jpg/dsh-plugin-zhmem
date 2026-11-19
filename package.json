@@ -1,6 +1,6 @@
-﻿{
+{
   "name": "dsh-plugin-zhmem",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Chinese-first hybrid retrieval for DSH: 84 built-in life/travel/fitness entries, personal memory recall, web and image search. Pure Node, no Python, no API key.",
   "type": "module",
   "license": "MIT",
