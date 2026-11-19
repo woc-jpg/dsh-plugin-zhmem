@@ -1,6 +1,8 @@
 # dsh-plugin-zhmem
 
-中文记忆检索插件。装完就能用，不需要 Python，不需要额外配置——知识库随插件一起走，记忆存在本地 SQLite 里。
+中文记忆检索。装完就能用，不需要 Python，不需要额外配置——知识库随包一起走，记忆存在本地 SQLite 里。
+
+**不想折腾插件？** [下 zip](https://github.com/woc-jpg/dsh-plugin-zhmem/releases/latest/download/zhmem-0.1.0.zip)，解压，双击 `启动.bat`。就这样。
 
 三件事：
 
@@ -17,6 +19,8 @@
 ### 路一：下载解压，双击就用（不装插件）
 
 去 <https://github.com/woc-jpg/dsh-plugin-zhmem/releases/latest> 下 zip，解压到任意目录，双击 `启动.bat`。
+
+直链：<https://github.com/woc-jpg/dsh-plugin-zhmem/releases/latest/download/zhmem-0.1.0.zip>
 
 会起一个本地服务，再弹一个独立浏览器窗口，关掉窗口服务就跟着退出。第一次启动会自己建库、灌入 84 条知识库，不需要联网。
 
