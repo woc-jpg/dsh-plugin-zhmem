@@ -188,6 +188,8 @@ node launcher.js
 
 ### 存进去的东西在哪，怎么备份
 
+默认位置：
+
 | 内容 | 位置 |
 |---|---|
 | 记忆库（个人记忆 + 导入的知识） | `~/.workbuddy/zhmem-memory.db` |
@@ -196,6 +198,24 @@ node launcher.js
 复制这两个路径就是完整备份。设了 `ZHMEM_DB` 的话，两个位置都跟着变。
 
 内置的 84 条不用备份，它在插件包里，重装自动回来。
+
+### 想放到 D 盘，别占 C 盘
+
+在 `启动.bat` 旁边建一个 `zhmem.env`，写一行就够：
+
+```
+ZHMEM_DB=D:\zhmem\zhmem-memory.db
+```
+
+目录不存在会自动建，知识文件夹跟着一起挪过去。改完关掉窗口重新双击。
+
+**老库搬家要小心**：WAL 模式下真实数据可能几乎全在 `-wal` 文件里（我这边遇到过主文件 32 KB、`-wal` 4 MB 的情况）。直接复制 `.db` 会丢掉最后那些写入。先合并再复制：
+
+```bash
+node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('旧路径');d.exec('PRAGMA wal_checkpoint(TRUNCATE)');d.close()"
+```
+
+然后把 `.db`（以及同时存在的 `-wal`、`-shm`）一起复制到新位置。搬完打开看一眼侧栏的条数对不对。
 
 ### 怎么确认真的导进去了
 
@@ -211,13 +231,9 @@ node launcher.js
 
 ### 提示数据库被锁
 
-同一个记忆库文件被两个进程同时打开了。插件模式、独立 MCP 服务、独立窗口版都会写 `~/.workbuddy/zhmem-memory.db`，同时跑两个就会抢锁。
+同一个记忆库文件被两个进程同时打开了。插件模式、独立 MCP 服务、独立窗口版都会写同一个 `.db`，同时跑两个就会抢锁。
 
-选一种模式用。如果确实要并发，给其中之一设环境变量换路径：
-
-```
-set ZHMEM_DB=D:\data\zhmem-b.db
-```
+选一种模式用。如果确实要并发，给其中之一换路径——独立窗口版在 `zhmem.env` 里写 `ZHMEM_DB=`，命令行里就 `set ZHMEM_DB=D:\data\zhmem-b.db`。
 
 ### 问中文问题，它跑去联网了
 

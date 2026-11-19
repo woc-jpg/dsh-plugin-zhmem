@@ -14,10 +14,15 @@ import { fileURLToPath } from 'node:url';
 import { ZhmemRuntime, createTools } from './lib/tools.js';
 import { VERSION } from './lib/store.js';
 import { describe } from './lib/kb.js';
+import { loadEnvFile } from './lib/config.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const PUBLIC_DIR = join(HERE, 'public');
 const MAX_BODY = 16 * 1024 * 1024;
+
+// `node server.js` should honour the same zhmem.env the launcher reads - people
+// who skip the window and run the service directly are not a different audience.
+loadEnvFile(HERE, { silent: true });
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

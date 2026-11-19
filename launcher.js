@@ -12,7 +12,13 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import { loadEnvFile } from './lib/config.js';
+
 const ROOT = dirname(fileURLToPath(import.meta.url));
+
+// Must run before anything reads ZHMEM_DB / PORT.
+loadEnvFile(ROOT);
+
 const PORT = Number(process.env.PORT ?? 8570);
 const OFFLINE = process.env.ZHMEM_OFFLINE === '1';
 const PROFILE = join(ROOT, '.browser-profile');

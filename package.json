@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "dsh-plugin-zhmem",
   "version": "0.1.0",
   "description": "Chinese-first hybrid retrieval for DSH: 84 built-in life/travel/fitness entries, personal memory recall, web and image search. Pure Node, no Python, no API key.",
@@ -29,7 +29,7 @@
   "scripts": {
     "start": "node launcher.js",
     "serve": "node server.js",
-    "test": "node --test test/parity.test.mjs test/server.test.mjs"
+    "test": "node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs"
   },
   "files": [
     "lib",
@@ -40,7 +40,8 @@
     "启动.bat",
     "cordis.patch.yml",
     "README.md",
-    "FAQ.md"
+    "FAQ.md",
+    "zhmem.env.example"
   ],
   "keywords": [
     "dsh-plugin",

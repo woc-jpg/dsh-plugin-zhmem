@@ -158,16 +158,34 @@ dsh plugin --profile web add github:woc-jpg/dsh-plugin-zhmem
 
 ---
 
-## 数据在哪
+## 数据在哪，怎么搬家
+
+默认位置：
 
 | 内容 | 位置 |
 |---|---|
 | 记忆数据库 | `~/.workbuddy/zhmem-memory.db` |
 | 自己的知识文件 | `~/.workbuddy/zhmem-knowledge/` |
 
-想换地方就设环境变量 `ZHMEM_DB`，目录会跟着走。备份就是复制这两个路径。
+**想搬到别的盘**（比如 C 盘挤了，或者想跟程序放一起）：在 `启动.bat` 旁边建一个 `zhmem.env`，写一行：
 
-内置知识库不占这两个位置——它在插件包里，跟着插件版本走。
+```
+ZHMEM_DB=D:\zhmem\zhmem-memory.db
+```
+
+目录不存在会自动建，知识文件跟着数据库走，一起挪到 `D:\zhmem\zhmem-knowledge\`。
+
+搬已有的库：先关掉窗口，再把老文件复制过去（记得连 `-wal`、`-shm` 一起，或者干脆照下面做一次干净导出），然后改 `zhmem.env` 重启。
+
+```bash
+node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('旧路径');d.exec('PRAGMA wal_checkpoint(TRUNCATE)');d.close()"
+```
+
+WAL 没合并进主文件就复制，会丢掉最后几次写入——`-wal` 文件可能就是几 MB。缩略成一句：**先 checkpoint，再复制**。
+
+`zhmem.env` 的完整写法见包里的 `zhmem.env.example`。真实环境变量优先于这个文件，所以临时跑一次可以直接 `set ZHMEM_DB=...` 而不改文件。
+
+备份就是复制那两个路径。内置知识库不占这两个位置——它在包里，跟着版本走，不用备份。
 
 ---
 
@@ -196,7 +214,16 @@ curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
 
 ## 配置项
 
-插件接受三个配置，写进 profile 的 bundle 配置里：
+**独立窗口版**读 `启动.bat` 旁边的 `zhmem.env`：
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `ZHMEM_DB` | `~/.workbuddy/zhmem-memory.db` | 记忆库路径，知识文件夹跟着走 |
+| `PORT` | `8570` | 本地端口 |
+| `ZHMEM_OFFLINE` | 不设 | 设成 `1` 就完全不联网 |
+| `ZHMEM_BROWSER` | 自动找 Edge 再找 Chrome | 用哪个浏览器开窗口 |
+
+**插件版**接受三个配置，写进 profile 的 bundle 配置里：
 
 | 键 | 默认 | 说明 |
 |---|---|---|
@@ -211,10 +238,10 @@ curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
 ## 开发
 
 ```bash
-node --test test/parity.test.mjs test/server.test.mjs
+node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs
 ```
 
-20 个用例。13 个把召回结果和 Python 版 zhmem 逐位对齐——命中的条目、证据分、总分三项都要一致；7 个跑 HTTP 那一层（播种、导入、静态文件、路径穿越）。改检索逻辑之后跑这个，数字变了就是改坏了。
+24 个用例。13 个把召回结果和 Python 版 zhmem 逐位对齐——命中的条目、证据分、总分三项都要一致；7 个跑 HTTP 那一层（播种、导入、静态文件、路径穿越）；4 个测配置文件解析（注释、引号、环境变量优先）。改检索逻辑之后跑这个，数字变了就是改坏了。
 
 ```
 lib/text.js        分词、覆盖度、查询清洗
