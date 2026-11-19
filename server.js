@@ -85,11 +85,77 @@ export async function startServer({ port = 0, host = '127.0.0.1', dbPath = null,
           offline: runtime.offline,
           counts,
           tools: [...tools.keys()],
+          chat: runtime.chat.describe(),
+          files: runtime.files.stats(),
         });
       }
 
       if (url.pathname === '/api/stats') {
         return sendJson(res, 200, { ok: true, ...describe(runtime.store), version: VERSION, db: runtime.dbPath });
+      }
+
+      // Conversation and file search get their own routes rather than going
+      // through the generic tool dispatcher: they take a session and return
+      // structured sources, and the UI needs the pieces (not a pre-rendered
+      // markdown blob) to lay out a chat transcript.
+      if (url.pathname === '/api/chat') {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: '只接受 POST' });
+        const body = await readBody(req);
+        const result = await runtime.chat.send({
+          session: body.session || 'default',
+          text: body.text,
+          useFiles: body.use_files !== false,
+          images: body.images === true,
+          ...(body.web_mode === 'always' ? { useWeb: true } : body.web_mode === 'never' ? { useWeb: false } : {}),
+        });
+        return sendJson(res, 200, { ok: true, result });
+      }
+
+      if (url.pathname === '/api/chat/history') {
+        const session = url.searchParams.get('session') || 'default';
+        return sendJson(res, 200, {
+          ok: true,
+          session,
+          messages: runtime.messages.all(session),
+          sessions: runtime.messages.sessions(),
+          mode: runtime.chat.describe(),
+        });
+      }
+
+      if (url.pathname === '/api/chat/clear') {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: '只接受 POST' });
+        const body = await readBody(req);
+        runtime.messages.clear(body.session || 'default');
+        return sendJson(res, 200, { ok: true });
+      }
+
+      if (url.pathname === '/api/files/stats') {
+        return sendJson(res, 200, { ok: true, ...runtime.files.stats() });
+      }
+
+      if (url.pathname === '/api/files/index') {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: '只接受 POST' });
+        const body = await readBody(req);
+        if (!body.path) return sendJson(res, 400, { ok: false, error: '要给一个目录路径' });
+        const result = runtime.files.index(body.path, { force: body.force === true });
+        return sendJson(res, 200, { ok: true, result });
+      }
+
+      if (url.pathname === '/api/files/search') {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: '只接受 POST' });
+        const body = await readBody(req);
+        const hits = runtime.files.search(body.query ?? '', {
+          limit: Number.isFinite(body.limit) ? body.limit : 8,
+          root: body.root ?? null,
+        });
+        return sendJson(res, 200, { ok: true, hits });
+      }
+
+      if (url.pathname === '/api/files/forget') {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: '只接受 POST' });
+        const body = await readBody(req);
+        const removed = runtime.files.forget(body.root);
+        return sendJson(res, 200, { ok: true, removed });
       }
 
       if (url.pathname.startsWith('/api/')) {

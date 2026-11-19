@@ -17,7 +17,9 @@
       </div>
     </div>
     <nav>
-      <button class="nav on" data-view="ask">检索</button>
+      <button class="nav on" data-view="chat">对话</button>
+      <button class="nav" data-view="ask">检索</button>
+      <button class="nav" data-view="files">文件</button>
       <button class="nav" data-view="memory">记忆</button>
       <button class="nav" data-view="kb">知识库</button>
       <button class="nav" data-view="about">关于</button>
@@ -29,14 +31,64 @@
   </aside>
 
   <main class="main">
+    <!-- 对话 -->
+    <section class="view on" id="view-chat">
+      <div class="chat-head">
+        <div>
+          <h2>对话</h2>
+          <p class="muted" id="chat-mode">正在读取配置…</p>
+        </div>
+        <div class="row tight">
+          <button id="chat-new" class="ghost">新对话</button>
+          <button id="chat-clear" class="ghost">清空</button>
+        </div>
+      </div>
+      <div id="chat-log" class="chat-log">
+        <div class="chat-empty">
+          <p>问点什么。回答会先看你自己的知识库、记忆和已索引的文件，本地不够才联网。</p>
+          <p class="muted">比如「敦煌三天怎么安排」「我文件里关于预算的部分说了什么」「继续刚才那个话题」。</p>
+        </div>
+      </div>
+      <div class="composer">
+        <textarea id="chat-input" rows="1" placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button id="chat-send" class="primary">发送</button>
+      </div>
+      <div class="hint" id="chat-hint">回答里标注的来源都可以核对；没有配置模型时，是把检索结果写成一段话，不是模型编的。</div>
+    </section>
+
     <!-- 检索 -->
-    <section class="view on" id="view-ask">
+    <section class="view" id="view-ask">
       <div class="askbar">
         <input id="q" type="text" placeholder="问点什么，比如「膝盖疼还能跑步吗」「敦煌怎么玩」" autocomplete="off">
         <button id="go" class="primary">问</button>
       </div>
       <div class="hint">本地命中够强就直接答，不够才联网，联网结果带来源链接和图片。</div>
       <div id="answer" class="answer empty">还没有提问。</div>
+    </section>
+
+    <!-- 文件 -->
+    <section class="view" id="view-files">
+      <div class="section-head">
+        <h2>本地文件</h2>
+        <button id="file-refresh" class="ghost">刷新</button>
+      </div>
+      <div class="card">
+        <p class="muted">把一个文件夹加进索引，之后对话和检索都能用到里面的内容。能读文本、代码、markdown、json、docx；PDF 这类只记文件名。</p>
+        <div class="row">
+          <input id="file-path" type="text" placeholder="文件夹绝对路径，例如 D:\资料\笔记">
+          <button id="file-add" class="primary">加入索引</button>
+          <button id="file-force" class="ghost">全部重读</button>
+        </div>
+        <div id="file-msg" class="muted"></div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <input id="file-q" type="text" placeholder="在这堆文件里搜内容">
+          <button id="file-search" class="primary">搜</button>
+        </div>
+        <div id="file-hits" class="list"></div>
+      </div>
+      <div id="file-roots" class="list"></div>
     </section>
 
     <!-- 记忆 -->
@@ -79,8 +131,9 @@
     <section class="view" id="view-about">
       <h2>关于</h2>
       <div class="card prose">
-        <p>zhmem 是一个中文优先的检索库。它有两层：<b>内置知识库</b>（生活 / 旅游 / 健身 84 条）和<b>个人记忆</b>（你自己存的事）。本地命中弱的时候才联网，联网结果都带来源。</p>
-        <p>这个窗口是独立运行的版本，和 DSH 插件用的是同一份检索代码，区别只在于一个走 HTTP、一个走 MCP。数据存在本机的 <code>~/.workbuddy/zhmem-memory.db</code>，两边共用同一个文件。</p>
+        <p>zhmem 是一个中文优先的检索库。它有三层：<b>内置知识库</b>（生活 / 旅游 / 健身 84 条）、<b>个人记忆</b>（你自己存的事）、<b>本地文件索引</b>（你指定的文件夹）。本地命中弱的时候才联网，联网结果都带来源。</p>
+        <p>对话会先检索这三层，再据此回答。配置了模型（<code>ZHMEM_MODEL_URL</code> / <code>ZHMEM_MODEL</code>）就由模型组织语言，没配就把检索结果写成一段话——两种模式在界面上会标出来，不会假装有模型。</p>
+        <p>这个窗口是独立运行的版本，和 DSH 插件用的是同一份检索代码，区别只在于一个走 HTTP、一个走 MCP。数据存在本机，两边共用同一个文件。</p>
         <p>没有 Python 依赖，只要 Node 22 以上。</p>
       </div>
       <div class="card">

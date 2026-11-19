@@ -85,27 +85,72 @@ dsh plugin --profile web add github:woc-jpg/dsh-plugin-zhmem
 
 ## 用起来
 
-装完之后多出十个工具，名字都以 `zhmem_` 开头：
+窗口里第一页就是对话。不是把检索结果换个样式摆出来——它会记住你说过的话，能接「那它呢」「继续说刚才那个」，回答前先翻你的知识库、记忆和已索引的文件。
+
+**两件事先说清楚，免得期待错位：**
+
+1. **没配模型也能对话**，但回答方式不同。没配的时候，程序把检索到的材料组织成一段连贯的话，界面上标「未配模型 · 检索结果直出」。配了模型（下面「接一个模型」那节），由模型组织语言，材料仍然来自本地检索。两种模式在回答底部都有标记，不会假装。
+2. 每次回答下面都列出来源：哪条知识库、哪个文件、哪个网页。点得开、核对得了。
+
+对话存在数据库里，按 `session` 分开。窗口的「新对话」开一段新的，「清空」只清当前这段。
+
+### 加自己的文件进来
+
+「文件」页填一个文件夹路径，「加入索引」。之后对话和检索都能用到里面的内容。
+
+- **能读**：`.txt .md .json .yaml .csv` 这类文本，`.py .js .ts .go .java .rs` 这类代码，`.html .css .sql`，以及 `.docx`（Word 文档直接读，不用转 PDF）
+- **只记文件名**：PDF、图片、音视频、压缩包 —— 能搜到「有这么个文件」，但搜不到里面写了什么
+- **跳过**：`node_modules`、`.git`、`dist`、`build`、`__pycache__` 这些目录不看；超过 8 MB 的单个文本文件跳过
+
+索引是增量的：第二次点「加入索引」只处理变过的文件。文件删了下次索引会从库里移出。想从头来一遍就点「全部重读」。
+
+搜索给的是文件里**命中的那一段**，不是文件开头——长文档的开头几乎从不是答案所在。
+
+### 接一个模型
+
+在 `启动.bat` 旁边建 `zhmem.env`，写三行：
+
+```
+ZHMEM_MODEL_URL=https://api.deepseek.com/chat/completions
+ZHMEM_MODEL=deepseek-chat
+ZHMEM_MODEL_KEY=sk-xxxxxxxx
+```
+
+任何 OpenAI 兼容接口都行，本地的 vLLM、Ollama 的 `/v1`、通义、智谱都是这个形状。**地址要写到 `/chat/completions`**，程序不替你补路径。
+
+接口挂了不会连带丢掉检索结果：连接失败会退回「检索结果直出」，前面加一句「（模型没连上：…）」说明原因。
+
+---
+
+## 工具
+
+装成插件之后多出十四个工具，名字都以 `zhmem_` 开头：
 
 | 工具 | 干什么 |
 |---|---|
-| `zhmem_ask` | 主入口。本地知识库 + 按需联网 + 配图，一次问完 |
+| `zhmem_ask` | 单次提问。本地知识库 + 按需联网 + 配图 |
+| `zhmem_chat` | **带上下文的多轮对话**，会翻本地文件和记忆 |
 | `zhmem_remember` | 存一条记忆 |
 | `zhmem_recall` | 按语义找记忆 |
 | `zhmem_forget` | 删一条记忆 |
 | `zhmem_list_memories` | 列最近的记忆 |
+| `zhmem_index_files` | 把一个文件夹加进索引 |
+| `zhmem_search_files` | 在已索引的文件里搜内容 |
+| `zhmem_file_stats` | 索引了多少文件、多少字、哪些目录 |
 | `zhmem_web_search` | 只联网，不碰本地 |
 | `zhmem_image_search` | 只找图 |
 | `zhmem_stats` | 现在存了多少东西 |
 | `zhmem_import_knowledge` | 导入自己的知识文件 |
 | `zhmem_knowledge_template` | 生成一份照着填的模板 |
 
+`zhmem_ask` 和 `zhmem_chat` 的区别：前者问一句答一句，不记前文；后者记得住，也会引用本地文件。要连续追问就用 `chat`。
+
 直接说话就行，智能体自己挑工具：
 
 > 地震的时候该怎么办
 > 记住我妈对青霉素过敏
 > 我以前说过对什么过敏吗
-> 每天盐摄入量多少合适
+> 把 D:\资料\笔记 加进索引，然后告诉我里面关于报销的部分说了什么
 
 ---
 
@@ -206,9 +251,20 @@ curl -s http://127.0.0.1:8570/api/status
 curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
   -H 'content-type: application/json' \
   -d '{"query":"每天盐摄入量"}'
+
+# 对话（会带上该 session 的前文）
+curl -s -X POST http://127.0.0.1:8570/api/chat \
+  -H 'content-type: application/json' \
+  -d '{"text":"那住宿呢","session":"default"}'
+
+# 索引一个文件夹，然后搜
+curl -s -X POST http://127.0.0.1:8570/api/files/index \
+  -H 'content-type: application/json' -d '{"path":"D:\\资料\\笔记"}'
+curl -s -X POST http://127.0.0.1:8570/api/files/search \
+  -H 'content-type: application/json' -d '{"query":"报销流程"}'
 ```
 
-`POST /api/<工具名>` 直接把十个工具的入参原样转进去，返回 `{ok, result}`。
+`POST /api/<工具名>` 把工具的入参原样转进去，返回 `{ok, result}`。`/api/chat` 和 `/api/files/*` 是单独的路由，返回结构化数据（来源、片段、评分），方便前端排版而不是解析一段 markdown。
 
 ---
 
@@ -223,6 +279,12 @@ curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
 | `ZHMEM_OFFLINE` | 不设 | 设成 `1` 就完全不联网 |
 | `ZHMEM_BROWSER` | 自动找 Edge 再找 Chrome | 用哪个浏览器开窗口 |
 | `ZHMEM_WINDOW` | `1296x828` | 窗口大小，居中打开。拖过窗口之后记的是你拖的尺寸 |
+| `ZHMEM_MODEL_URL` | 不设 | 模型接口地址，要写到 `/chat/completions` |
+| `ZHMEM_MODEL` | 不设 | 模型名，例如 `deepseek-chat` |
+| `ZHMEM_MODEL_KEY` | 不设 | 接口密钥 |
+| `ZHMEM_MODEL_TEMPERATURE` | `0.3` | 0 到 1，越低越稳 |
+
+不填模型那三项也能正常用，只是回答由检索结果直接组织。`ZHMEM_MODEL_URL` 和 `ZHMEM_MODEL` 两个都填了才算配置好——只填一个会当作没配。
 
 **插件版**接受三个配置，写进 profile 的 bundle 配置里：
 
@@ -232,6 +294,8 @@ curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
 | `offline` | `false` | 设 `true` 就完全不联网 |
 | `webThreshold` | `0.45` | 本地证据低于这个值才联网 |
 
+插件版要接模型，设 `ZHMEM_MODEL_URL` / `ZHMEM_MODEL` / `ZHMEM_MODEL_KEY` 环境变量（或者把 `zhmem.env` 放在 MCP 进程的工作目录），读的是同一套键。
+
 `webThreshold` 调高会更爱联网，调低更相信本地。默认 0.45 是标定出来的：真话题的证据分基本在 0.45 以上，无关问句在 0.41 以下。
 
 ---
@@ -239,10 +303,10 @@ curl -s -X POST http://127.0.0.1:8570/api/zhmem_ask \
 ## 开发
 
 ```bash
-node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs
+node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs test/files.test.mjs test/chat.test.mjs
 ```
 
-24 个用例。13 个把召回结果和 Python 版 zhmem 逐位对齐——命中的条目、证据分、总分三项都要一致；7 个跑 HTTP 那一层（播种、导入、静态文件、路径穿越）；4 个测配置文件解析（注释、引号、环境变量优先）。改检索逻辑之后跑这个，数字变了就是改坏了。
+61 个用例。13 个把召回结果和 Python 版 zhmem 逐位对齐——命中的条目、证据分、总分三项都要一致；13 个跑 HTTP 那一层（播种、导入、静态文件、路径穿越、对话历史、文件索引增删）；4 个测配置文件解析；11 个测文件索引（各种编码、docx、超大文件、二进制、片段定位、增量）；20 个测对话（无模型降级、假接口的真模型路径、SSE 流式、接口挂掉时保住检索结果、历史截断）。改检索逻辑之后跑这个，数字变了就是改坏了。
 
 ```
 lib/text.js        分词、覆盖度、查询清洗
@@ -251,7 +315,9 @@ lib/store.js       SQLite 存储 + 打分
 lib/kb.js          知识库加载与导入
 lib/retriever.js   本地/联网调度
 lib/web.js         联网与图片（DuckDuckGo + Wikimedia，都不要 key）
-lib/tools.js       十个工具的定义
+lib/files.js       本地文件索引（文本/代码/docx，FTS5 增量）
+lib/chat.js        对话层：历史、上下文拼装、模型流式、无模型降级
+lib/tools.js       十四个工具的定义
 lib/index.js       DSH 插件入口
 lib/mcp.js         独立 MCP 服务
 server.js          HTTP 服务（独立版）

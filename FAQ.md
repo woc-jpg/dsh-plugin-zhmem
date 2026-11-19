@@ -227,7 +227,94 @@ node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('�
 
 ---
 
-## 三、装上了但不好用
+## 三、对话和本地文件
+
+### 它到底会不会「对话」？
+
+窗口第一页是对话，分两种模式，界面上会标出来：
+
+- **配了模型**：由模型组织语言，回答下方标「模型作答」
+- **没配模型**：程序把检索到的材料写成一段连贯的话，标「未配模型 · 检索结果直出」
+
+两种模式都能记住你说过的话。「那住宿呢」「继续说刚才那个」这种接得上，因为它会把上一句你的原话带进检索。区别只在于由谁来组织语言。
+
+没配模型不是故障。这个工具的核心是「从你自己的资料里找答案」，找得到就已经完成任务了；模型只负责把找到的东西说得顺一点。
+
+### 想让它真的会说话，怎么配
+
+在 `启动.bat` 旁边建 `zhmem.env`，写三行：
+
+```
+ZHMEM_MODEL_URL=https://api.deepseek.com/chat/completions
+ZHMEM_MODEL=deepseek-chat
+ZHMEM_MODEL_KEY=sk-xxxxxxxx
+```
+
+重启窗口。地址要**写到 `/chat/completions`**，程序不替你补路径——这一点最容易错，写成 `https://api.deepseek.com` 会连不上。
+
+本地模型也一样，只要它认 OpenAI 的接口形状：
+
+```
+ZHMEM_MODEL_URL=http://127.0.0.1:11434/v1/chat/completions
+ZHMEM_MODEL=qwen2.5:7b
+```
+
+（Ollama 不需要 key，那行就空着。）
+
+### 模型连不上会怎样
+
+不会连累检索。回答会变成「（模型没连上：原因）」，下面接检索结果直出的那段话。**已经查到的材料不会因为接口挂了就丢掉。**
+
+想确认配对了没有：窗口右上「关于」页会显示当前模式（`模型 xxx · endpoint` 还是「没有配置模型」）。
+
+### 怎么让它读我的文件
+
+「文件」页填一个文件夹路径，点「加入索引」。之后对话会自动带上里面相关的内容，回答底部会标「文件 xxx.md」。
+
+能读什么：
+
+| 类型 | 说明 |
+|---|---|
+| 文本 | `.txt .md .markdown .rst .log .csv .tsv .json .jsonl .yaml .yml .toml .ini .conf .env` |
+| 代码 | `.py .js .mjs .ts .jsx .tsx .vue .java .c .cpp .cs .go .rs .rb .php .lua .sql .sh .ps1 .bat` |
+| 网页样式 | `.html .htm .css .scss .less .xml .svg` |
+| Word | `.docx`（直接读，不用转） |
+
+不能读的：PDF、图片、音视频、压缩包、Excel 表格。这些**只记文件名**——搜「报销单」能搜到 `报销单.pdf` 这个文件存在，但搜不到里面写了什么。
+
+想看 PDF 的内容，先把它转成文本或 Word 再索引。
+
+### 索引很慢 / 卡住
+
+默认会跳过这些目录：`node_modules`、`.git`、`dist`、`build`、`target`、`__pycache__`、`.venv`、`.next`。单个文本文件超过 8 MB 也跳过。
+
+如果还是慢，说明那个目录确实很大。**不要整个 D 盘加进去**——加你真正会查的那几个文件夹，比如 `D:\资料\工作`、`D:\笔记`。
+
+第二次点「加入索引」是增量的，只处理变过的文件，几秒钟。
+
+### 文件删了 / 改名了
+
+下次索引时自动从库里移出（返回里的「移出 N」）。不用手动清。
+
+想彻底不管某个目录：文件页那个目录右边点 ✕，整个目录的索引就没了，磁盘上的文件不动。
+
+### 搜文件只给了片段，怎么看全文
+
+片段是命中的那一段，不是文件开头——长文档的开头几乎从不是答案所在。想看全文就按片段里显示的文件路径自己打开。这个窗口定位是「帮你找到在哪个文件里」，不是文档阅读器。
+
+### 对话记录存在哪
+
+和记忆同一个数据库。换机器、搬盘的时候一起过去。按 session 分开，窗口的「新对话」开一段新的。
+
+「清空」只清当前这段，别的留着。想全清：
+
+```bash
+node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('D:/zhmem/zhmem-memory.db');d.exec('DELETE FROM messages');d.close()"
+```
+
+---
+
+## 四、装上了但不好用
 
 ### 提示数据库被锁
 
@@ -262,7 +349,7 @@ node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('�
 
 ---
 
-## 四、跟 Python 版是什么关系
+## 五、跟 Python 版是什么关系
 
 原本有一套 Python 实现（`zhmem`，PyPI 上的包）。这个插件是它的端口，检索逻辑逐行对齐——同样是 FTS5 + 覆盖率打分、同一套同义词折叠、同一个 0.45 联网阈值。
 
@@ -273,10 +360,10 @@ node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('�
 要验证两边行为一致：
 
 ```bash
-node --test test/parity.test.mjs test/server.test.mjs
+node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs test/files.test.mjs test/chat.test.mjs
 ```
 
-13 个用例对着 Python 版的输出逐位比对，命中条目、证据分、总分三项都要一致；另外 7 个跑 HTTP 那一层。改完检索逻辑就跑这个，数字变了就是改坏了。
+61 个用例。13 个对着 Python 版的输出逐位比对，命中条目、证据分、总分三项都要一致；其余覆盖 HTTP 层、配置解析、文件索引、对话降级。改完检索逻辑就跑这个，数字变了就是改坏了。
 
 ---
 

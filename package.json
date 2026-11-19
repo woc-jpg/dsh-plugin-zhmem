@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-zhmem",
-  "version": "0.1.1",
-  "description": "Chinese-first hybrid retrieval for DSH: 84 built-in life/travel/fitness entries, personal memory recall, web and image search. Pure Node, no Python, no API key.",
+  "version": "0.2.0",
+  "description": "Chinese-first hybrid retrieval for DSH: 84 built-in life/travel/fitness entries, personal memory recall, multi-turn chat over your own files, web and image search. Pure Node, no Python, no API key required.",
   "type": "module",
   "license": "MIT",
   "main": "lib/index.js",
@@ -29,7 +29,7 @@
   "scripts": {
     "start": "node launcher.js",
     "serve": "node server.js",
-    "test": "node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs"
+    "test": "node --test test/parity.test.mjs test/server.test.mjs test/config.test.mjs test/files.test.mjs test/chat.test.mjs"
   },
   "files": [
     "lib",
